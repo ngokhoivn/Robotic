@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mindmap ESP32 Motor Control với Hình Ảnh</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;   /* xếp dọc */
+            justify-content: flex-start; /* căn trên */
+            align-items: center;      /* căn giữa ngang */
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+
+        .mindmap-container {
+            width: 100%;
+            max-width: 1200px;
+            height: 800px;
+            position: relative;
+            display: grid;
+            place-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            overflow: hidden;
+            padding: 20px;
+        }
+
+        .central-node {
+            grid-area: 1/1;
+            width: 200px;
+            height: 120px;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            box-shadow: 0 15px 35px rgba(255, 107, 107, 0.4);
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            z-index: 10;
+            position: relative;
+        }
+
+        .central-node:hover {
+            transform: scale(1.05);
+        }
+
+        .branches-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 5;
+        }
+
+        .branch-wrapper {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 220px;
+        }
+
+        .branch-wrapper-top {
+            top: 5%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .branch-wrapper-right {
+            right: 5%;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .branch-wrapper-bottom {
+            bottom: 5%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .branch-wrapper-left {
+            left: 5%;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .branch {
+            width: 180px;
+            height: 100px;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            position: relative;
+            z-index: 2;
+        }
+
+        .branch:hover {
+            transform: scale(1.1);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+        }
+
+        .branch-top {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+        }
+
+        .branch-right {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+        }
+
+        .branch-bottom {
+            background: linear-gradient(135deg, #4a69bd, #1e3799);
+        }
+
+        .branch-left {
+            background: linear-gradient(135deg, #8e44ad, #6c5ce7);
+        }
+
+        .sub-branches {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .sub-branch {
+            width: 140px;
+            height: 70px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .sub-branch:hover {
+            transform: scale(1.05);
+        }
+
+        /* Sub-branches for Bước 1-2 */
+        .sub-1-1 {
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+        }
+
+        .sub-1-2 {
+            background: linear-gradient(135deg, #fd79a8, #e84393);
+        }
+
+        /* Sub-branches for Bước 3-4 */
+        .sub-2-1 {
+            background: linear-gradient(135deg, #fdcb6e, #e17055);
+        }
+
+        .sub-2-2 {
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+        }
+
+        /* Sub-branches for Bước 5-6 */
+        .sub-3-1 {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+        }
+
+        .sub-3-2 {
+            background: linear-gradient(135deg, #273c75, #192a56);
+        }
+
+        /* Sub-branches for Bước 7-8 */
+        .sub-4-1 {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+        }
+
+        .sub-4-2 {
+            background: linear-gradient(135deg, #706fd3, #474787);
+        }
+
+        .connection {
+            position: absolute;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.6);
+            transform-origin: 0 0;
+            z-index: 1;
+        }
+
+        .connection-top {
+            top: 50%;
+            left: 50%;
+            width: 200px;
+            transform: translate(100px, -50px) rotate(-90deg);
+        }
+
+        .connection-right {
+            top: 50%;
+            left: 50%;
+            width: 200px;
+            transform: translate(50px, 100px) rotate(0deg);
+        }
+
+        .connection-bottom {
+            top: 50%;
+            left: 50%;
+            width: 200px;
+            transform: translate(-100px, 50px) rotate(90deg);
+        }
+
+        .connection-left {
+            top: 50%;
+            left: 50%;
+            width: 200px;
+            transform: translate(-50px, -100px) rotate(180deg);
+        }
+
+        .emoji {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .warning {
+            background: linear-gradient(135deg, #ff7675, #d63031) !important;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .title {
+            text-align: center;
+            margin: 0 auto 20px auto; /* căn giữa và cách dưới 20px */
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            width: 100%; /* chiếm toàn bộ ngang để text-align center hoạt động */
+        }
+
+        .step-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 15px;
+            width: 80%;
+            max-width: 800px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s;
+            position: relative;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            position: absolute;
+            top: 10px;
+            right: 20px;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .modal-header {
+            padding: 10px 0;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 15px;
+        }
+
+        .modal-body {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .modal-image {
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-notes {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Hiệu ứng glow khi hover */
+        .glow-on-hover {
+            position: relative;
+        }
+
+        .glow-on-hover::after {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            right: -5px;
+            bottom: -5px;
+            border-radius: inherit;
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .branch-top.glow-on-hover::after {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            filter: blur(10px);
+        }
+
+        .branch-right.glow-on-hover::after {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            filter: blur(10px);
+        }
+
+        .branch-bottom.glow-on-hover::after {
+            background: linear-gradient(135deg, #4a69bd, #1e3799);
+            filter: blur(10px);
+        }
+
+        .branch-left.glow-on-hover::after {
+            background: linear-gradient(135deg, #8e44ad, #6c5ce7);
+            filter: blur(10px);
+        }
+
+        .glow-on-hover:hover::after {
+            opacity: 0.7;
+        }
+
+        @media (max-width: 1024px) {
+            .mindmap-container {
+                height: 700px;
+            }
+            
+            .branch-wrapper {
+                width: 180px;
+            }
+            
+            .branch {
+                width: 150px;
+                height: 90px;
+                font-size: 12px;
+            }
+            
+            .sub-branch {
+                width: 120px;
+                height: 60px;
+                font-size: 10px;
+            }
+            
+            .connection-top,
+            .connection-right,
+            .connection-bottom,
+            .connection-left {
+                width: 150px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .mindmap-container {
+                height: 600px;
+            }
+            
+            .central-node {
+                width: 150px;
+                height: 80px;
+                font-size: 14px;
+            }
+            
+            .branch-wrapper {
+                width: 140px;
+            }
+            
+            .branch {
+                width: 120px;
+                height: 70px;
+                font-size: 11px;
+            }
+            
+            .sub-branches {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .sub-branch {
+                width: 100px;
+                height: 50px;
+                font-size: 9px;
+            }
+            
+            .connection-top,
+            .connection-right,
+            .connection-bottom,
+            .connection-left {
+                width: 120px;
+            }
+            
+            .title {
+                font-size: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .mindmap-container {
+                height: 500px;
+            }
+            
+            .central-node {
+                width: 120px;
+                height: 70px;
+                font-size: 12px;
+            }
+            
+            .branch-wrapper {
+                width: 110px;
+            }
+            
+            .branch {
+                width: 100px;
+                height: 60px;
+                font-size: 10px;
+            }
+            
+            .sub-branch {
+                width: 90px;
+                height: 45px;
+                font-size: 8px;
+            }
+            
+            .connection-top,
+            .connection-right,
+            .connection-bottom,
+            .connection-left {
+                width: 100px;
+            }
+            
+            .title {
+                font-size: 18px;
+                top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="title">🤖 ESP32 & Motor DC - Hành trình từ Zero đến Hero</div>
+
+    <div class="mindmap-container">
+        
+        
+        <!-- Central Node -->
+        <div class="central-node" onclick="showInfo('central')">
+            <div class="emoji">🧠</div>
+            <div>ESP32</div>
+            <div>điều khiển</div>
+            <div>Motor DC</div>
+        </div>
+
+        <!-- Connections -->
+        <div class="connection connection-top"></div>
+        <div class="connection connection-right"></div>
+        <div class="connection connection-bottom"></div>
+        <div class="connection connection-left"></div>
+
+        <div class="branches-container">
+            <!-- Top Branch (Bước 1-2) -->
+            <div class="branch-wrapper branch-wrapper-top">
+                <div class="branch branch-top glow-on-hover" onclick="showImageModal('image1')">
+                    <div class="step-indicator">Bước 1-2</div>
+                    <div class="emoji">🔋</div>
+                    <div>Hiểu về điện</div>
+                    <div>& Bộ não ESP32</div>
+                </div>
+                <div class="sub-branches">
+                    <div class="sub-branch sub-1-1" onclick="showInfo('power')">
+                        <div>⚡ Motor cần điện<br>như người cần ăn</div>
+                    </div>
+                    <div class="sub-branch sub-1-2 warning" onclick="showInfo('safety')">
+                        <div>⚠️ Chỉ dùng<br>nguồn nhỏ!</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Branch (Bước 3-4) -->
+            <div class="branch-wrapper branch-wrapper-right">
+                <div class="branch branch-right glow-on-hover" onclick="showImageModal('image2')">
+                    <div class="step-indicator">Bước 3-4</div>
+                    <div class="emoji">🔌</div>
+                    <div>Cắm nguồn</div>
+                    <div>& Nối Motor</div>
+                </div>
+                <div class="sub-branches">
+                    <div class="sub-branch sub-2-1" onclick="showInfo('drv8833')">
+                        <div>🎛️ DRV8833<br>Driver điều khiển</div>
+                    </div>
+                    <div class="sub-branch sub-2-2" onclick="showInfo('brain')">
+                        <div>🧠 ESP32 = Bộ não<br>ra lệnh thông minh</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Branch (Bước 5-6) -->
+            <div class="branch-wrapper branch-wrapper-bottom">
+                <div class="branch branch-bottom glow-on-hover" onclick="showImageModal('image3')">
+                    <div class="step-indicator">Bước 5-6</div>
+                    <div class="emoji">📡</div>
+                    <div>Nối tín hiệu</div>
+                    <div>& Viết code</div>
+                </div>
+                <div class="sub-branches">
+                    <div class="sub-branch sub-3-1" onclick="showInfo('wiring')">
+                        <div>🔧 VCC(+) GND(-)<br>Đèn xanh = OK</div>
+                    </div>
+                    <div class="sub-branch sub-3-2" onclick="showInfo('output')">
+                        <div>🔩 OUT1, OUT2<br>nối với Motor</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Left Branch (Bước 7-8) -->
+            <div class="branch-wrapper branch-wrapper-left">
+                <div class="branch branch-left glow-on-hover" onclick="showImageModal('image4')">
+                    <div class="step-indicator">Bước 7-8</div>
+                    <div class="emoji">📱</div>
+                    <div>Test & Bluetooth</div>
+                    <div>Nâng cao</div>
+                </div>
+                <div class="sub-branches">
+                    <div class="sub-branch sub-4-1" onclick="showInfo('input')">
+                        <div>📊 IN1(Pin26)<br>IN2(Pin25)</div>
+                    </div>
+                    <div class="sub-branch sub-4-2" onclick="showInfo('bluetooth')">
+                        <div>📲 F=Tiến, B=Lùi<br>S=Dừng, 0-9=Tốc độ</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for images -->
+    <div id="imageModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <div class="modal-header">
+                <h2 id="modalTitle">Tiêu đề</h2>
+            </div>
+            <div class="modal-body">
+                <img id="modalImage" class="modal-image" src="" alt="Hình ảnh minh họa">
+                <div id="modalNotes" class="modal-notes">
+                    <p>Ghi chú sẽ xuất hiện ở đây...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Image data - bạn có thể thay thế bằng đường dẫn hình ảnh thực tế
+        const imageData = {
+            image1: {
+                title: "Bước 1-2: Hiểu về điện & Bộ não ESP32",
+                imageUrl: "https://via.placeholder.com/800x400/4ecdc4/ffffff?text=Hình+Ảnh+Bước+1-2",
+                notes: "🔋 HIỂU VỀ ĐIỆN VÀ BỘ NÃO ESP32\n\n• Motor DC cần điện để hoạt động, giống như con người cần thức ăn\n• ESP32 là bộ não điều khiển, xử lý các lệnh và ra quyết định\n• DRV8833 đóng vai trò là driver, giúp khuếch đại tín hiệu từ ESP32\n• Luôn sử dụng nguồn điện phù hợp (3-6V) để tránh làm hỏng thiết bị"
+            },
+            image2: {
+                title: "Bước 3-4: Cắm nguồn & Nối Motor",
+                imageUrl: "https://via.placeholder.com/800x400/f093fb/ffffff?text=Hình+Ảnh+Bước+3-4",
+                notes: "🔌 CẮM NGUỒN VÀ NỐI MOTOR\n\n• Kết nối nguồn điện: VCC (+) và GND (-) đúng cực\n• Đèn LED trên DRV8833 sáng xanh cho biết kết nối nguồn thành công\n• Nối dây motor vào các cổng OUT1 và OUT2 của DRV8833\n• Kiểm tra kỹ các kết nối trước khi cấp nguồn để tránh chập mạch"
+            },
+            image3: {
+                title: "Bước 5-6: Nối tín hiệu & Viết code",
+                imageUrl: "https://via.placeholder.com/800x400/4a69bd/ffffff?text=Hình+Ảnh+Bước+5-6",
+                notes: "📡 NỐI TÍN HIỆU VÀ VIẾT CODE\n\n• Kết nối chân tín hiệu từ ESP32 đến DRV8833: IN1 (Pin 26), IN2 (Pin 25)\n• Viết code điều khiển motor: thiết lập các chân digital output\n• Sử dụng hàm digitalWrite() để điều khiển chiều quay motor\n• Có thể sử dụng PWM để điều khiển tốc độ motor"
+            },
+            image4: {
+                title: "Bước 7-8: Test & Bluetooth nâng cao",
+                imageUrl: "https://via.placeholder.com/800x400/8e44ad/ffffff?text=Hình+Ảnh+Bước+7-8",
+                notes: "📱 TEST VÀ BLUETOOTH NÂNG CAO\n\n• Test hệ thống: kiểm tra chiều quay motor, tốc độ, và phản hồi\n• Kết nối Bluetooth với ESP32 để điều khiển từ xa\n• Các lệnh Bluetooth cơ bản: F (Forward - Tiến), B (Backward - Lùi), S (Stop - Dừng)\n• Điều khiển tốc độ bằng các giá trị từ 0-9 (0% đến 90%)"
+            }
+        };
+
+        function showImageModal(imageId) {
+            const modal = document.getElementById('imageModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalImage = document.getElementById('modalImage');
+            const modalNotes = document.getElementById('modalNotes');
+            
+            // Set modal content based on imageId
+            const data = imageData[imageId];
+            modalTitle.textContent = data.title;
+            modalImage.src = data.imageUrl;
+            modalImage.alt = data.title;
+            modalNotes.innerHTML = `<p>${data.notes.replace(/\n/g, '<br>')}</p>`;
+            
+            // Show modal
+            modal.style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('imageModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside of modal content
+        window.onclick = function(event) {
+            const modal = document.getElementById('imageModal');
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+
+        function showInfo(topic) {
+            const messages = {
+                central: "🤖 ESP32 là vi điều khiển thông minh giúp điều khiển motor DC tự động. Từ việc cấp nguồn đơn giản đến điều khiển Bluetooth phức tạp!",
+                
+                step1: "🔋 BƯỚC 1-2: Hiểu cơ bản\n• Motor cần điện để quay (như người cần ăn)\n• ESP32 = bộ não, DRV8833 = driver\n• Chỉ dùng nguồn nhỏ để an toàn!",
+                
+                step2: "🔌 BƯỚC 3-4: Kết nối phần cứng\n• Cấp nguồn: VCC(+) và GND(-)\n• Đèn xanh DRV8833 = thành công\n• Motor nối vào OUT1, OUT2",
+                
+                step3: "📡 BƯỚC 5-6: Tín hiệu & Code\n• IN1 (Pin 26), IN2 (Pin 25)\n• Code đơn giản: HIGH/LOW điều khiển\n• Test với Serial Monitor",
+                
+                step4: "📱 BƯỚC 7-8: Nâng cao\n• Bluetooth điều khiển từ xa\n• F=Tiến, B=Lùi, S=Dừng\n• 0-9 điều chỉnh tốc độ PWM",
+                
+                power: "⚡ NGUỒN ĐIỆN\nMotor DC cần điện để quay, giống như con người cần ăn mới có sức làm việc. Không có điện = motor không quay!",
+                
+                safety: "⚠️ AN TOÀN\nChỉ dùng nguồn 3-6V! Nguồn cao sẽ làm cháy motor và module. Luôn kiểm tra cực dương/âm trước khi cắm!",
+                
+                drv8833: "🎛️ DRIVER DRV8833\nLà cầu nối giữa ESP32 và Motor. ESP32 ra lệnh → DRV8833 dịch → Motor thực hiện. Có phân biệt cực!",
+                
+                brain: "🧠 BỘ NÃO ESP32\nVi điều khiển thông minh, có thể lập trình để điều khiển motor tự động theo ý muốn. Kết nối WiFi, Bluetooth!",
+                
+                wiring: "🔧 KẾT NỐI NGUỒN\nVCC = điện dương (+)\nGND = điện âm (-)\nĐèn xanh sáng = kết nối đúng!",
+                
+                output: "🔩 CỔNG ĐẦU RA\nOUT1, OUT2 là nơi motor được nối. Đây là 'tay chân' thực hiện công việc theo lệnh của bộ não.",
+                
+                input: "📊 CỔNG ĐẦU VÀO\nIN1 (Pin 26), IN2 (Pin 25) nhận tín hiệu từ ESP32. HIGH/LOW khác nhau tạo ra chiều quay khác nhau.",
+                
+                bluetooth: "📲 ĐIỀU KHIỂN BLUETOOTH\nDùng điện thoại gửi lệnh:\n• F = Forward (Tiến)\n• B = Backward (Lùi)\n• S = Stop (Dừng)\n• 0-9 = Tốc độ (0% đến 100%)"
+            };
+            
+            alert(messages[topic] || "Thông tin đang được cập nhật...");
+        }
+
+        // Animation on load
+        window.addEventListener('load', function() {
+            const branches = document.querySelectorAll('.branch, .sub-branch');
+            branches.forEach((branch, index) => {
+                branch.style.opacity = '0';
+                branch.style.transform += ' translateY(20px)';
+                setTimeout(() => {
+                    branch.style.transition = 'all 0.5s ease';
+                    branch.style.opacity = '1';
+                    branch.style.transform = branch.style.transform.replace('translateY(20px)', '');
+                }, index * 200);
+            });
+            
+            // Animate connections
+            const connections = document.querySelectorAll('.connection');
+            connections.forEach(conn => {
+                conn.style.width = '0';
+                setTimeout(() => {
+                    conn.style.transition = 'width 1s ease-in-out';
+                    conn.style.width = getComputedStyle(conn).width;
+                }, 1000);
+            });
+        });
+
+        // Interactive hover effects
+        document.querySelectorAll('.branch, .sub-branch, .central-node').forEach(element => {
+            element.addEventListener('mouseenter', function() {
+                this.style.filter = 'brightness(1.2)';
+            });
+            
+            element.addEventListener('mouseleave', function() {
+                this.style.filter = 'brightness(1)';
+            });
+        });
+    </script>
+</body>
+</html>
